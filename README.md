@@ -43,13 +43,13 @@ A gesture recognition wearable system — **Phase 01: Data Collection**. An ESP8
 Requires Python ≥ 3.12. This project uses [uv](https://docs.astral.sh/uv/) for dependency management.
 
 ```bash
-pip install pyserial pandas
+uv sync
 ```
 
 ### 3. Collect Gesture Data
 
 ```bash
-python gesture_logger.py --port /dev/ttyUSB0 --gesture wave_right
+uv run gesture_logger.py --port /dev/ttyUSB0 --gesture wave_right
 ```
 
 **Arguments:**
