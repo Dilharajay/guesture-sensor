@@ -1,3 +1,4 @@
+#include <Arduino.h>
 /*
  * =====================================================
  *  Gesture Recognition Wearable — Phase 01
