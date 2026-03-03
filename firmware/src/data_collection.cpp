@@ -76,7 +76,7 @@ void readMPU6050(float &ax, float &ay, float &az,
   Wire.beginTransmission(MPU_ADDR);
   Wire.write(ACCEL_XOUT_H);
   Wire.endTransmission(false);
-  Wire.requestFrom(MPU_ADDR, 14, true);
+  Wire.requestFrom((uint8_t)MPU_ADDR, (size_t)14, true);
 
   for (int i = 0; i < 7; i++) {
     rawData[i]  = Wire.read() << 8;
