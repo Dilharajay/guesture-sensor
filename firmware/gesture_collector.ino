@@ -94,7 +94,7 @@ void readMPU6050(float &ax, float &ay, float &az,
 // ────────────────────────────────────────────────────
 void setup() {
   Serial.begin(115200);
-  Wire.begin(D2, D1); // SDA=D2, SCL=D1 on NodeMCU
+  Wire.begin(4, 5); // SDA=D2, SCL=D1 on NodeMCU
   setupMPU6050();
 
   Serial.println("# GESTURE COLLECTOR READY");
