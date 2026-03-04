@@ -30,8 +30,10 @@ from tensorflow import keras
 from tensorflow.keras import layers
 
 # ── Config ──────────────────────────────────────────
-DATA_DIR     = "data"
-MODELS_DIR   = "models"
+ROOT_DIR   = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+DATA_DIR   = os.path.join(ROOT_DIR, "data")
+INPUT_CSV   = os.path.join(DATA_DIR, "gesture_dataset.csv")
+MODELS_DIR   = os.path.join(ROOT_DIR,"models")
 WINDOW_SIZE  = 50
 N_FEATURES   = 6
 

@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gesture Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Unbounded:wght@400;700;900&display=swap" rel="stylesheet">
+<!-- Paho MQTT over WebSocket -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+<style>
+  :root {
+    --bg:       #05050a;
+    --grid:     #0c0c14;
+    --border:   #16162a;
+    --surface:  #0e0e1c;
+    --glow:     #00ffe0;
+    --glow2:    #ff3cac;
+    --glow3:    #ffd700;
+    --dim:      #2a2a4a;
+    --text:     #ccd0e8;
+    --muted:    #454568;
+    --mono:     'DM Mono', monospace;
+    --display:  'Unbounded', sans-serif;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,224,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,224,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Radial glow center */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px; height: 600px;
+    background: radial-gradient(ellipse, rgba(0,255,224,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    transition: opacity 0.5s;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 24px 60px;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .brand {}
+  .brand-tag {
+    font-size: 10px;
+    color: var(--glow);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    opacity: 0.7;
+  }
+
+  .brand-name {
+    font-family: var(--display);
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: #fff;
+  }
+
+  .brand-name span { color: var(--glow); }
+
+  .conn-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .conn-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .conn-input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 10px;
+    outline: none;
+    width: 160px;
+    transition: border-color 0.2s;
+  }
+
+  .conn-input:focus { border-color: var(--glow); }
+
+  .conn-btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    border: 1px solid var(--glow);
+    background: transparent;
+    color: var(--glow);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .conn-btn:hover { background: var(--glow); color: #000; }
+  .conn-btn.danger { border-color: var(--glow2); color: var(--glow2); }
+  .conn-btn.danger:hover { background: var(--glow2); color: #fff; }
+
+  .status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  .pulse {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+
+  .pulse.on {
+    background: var(--glow);
+    box-shadow: 0 0 10px var(--glow), 0 0 20px var(--glow);
+    animation: blink 2s ease infinite;
+  }
+
+  .pulse.err { background: var(--glow2); box-shadow: 0 0 8px var(--glow2); }
+
+  @keyframes blink {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.4; }
+  }
+
+  /* ── Hero gesture display ── */
+  .hero {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 40px;
+    animation: fadeUp 0.5s 0.1s ease both;
+  }
+
+  .hero-card {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 48px 32px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  .hero-card.fired {
+    border-color: var(--glow);
+    animation: heroPulse 0.6s ease;
+  }
+
+  @keyframes heroPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(0,255,224,0); }
+    30%  { box-shadow: 0 0 40px 10px rgba(0,255,224,0.25); }
+    100% { box-shadow: 0 0 0 0 rgba(0,255,224,0); }
+  }
+
+  /* Scan line effect */
+  .hero-card::before {
+    content: '';
+    position: absolute;
+    top: -100%;
+    left: 0; right: 0;
+    height: 40%;
+    background: linear-gradient(transparent, rgba(0,255,224,0.03), transparent);
+    animation: scan 4s linear infinite;
+    pointer-events: none;
+  }
+
+  @keyframes scan {
+    0%   { top: -40%; }
+    100% { top: 120%; }
+  }
+
+  .hero-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .hero-gesture {
+    font-family: var(--display);
+    font-size: clamp(2.5rem, 7vw, 5rem);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    color: #fff;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+
+  .hero-gesture.active { color: var(--glow); }
+
+  .hero-conf {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  .hero-conf span { color: var(--glow); font-weight: 500; }
+
+  .conf-bar-wrap {
+    width: 200px;
+    height: 3px;
+    background: var(--border);
+    margin: 12px auto 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .conf-bar {
+    height: 100%;
+    background: var(--glow);
+    width: 0%;
+    transition: width 0.4s ease;
+    box-shadow: 0 0 8px var(--glow);
+  }
+
+  /* ── Gesture grid ── */
+  .section-head {
+    font-size: 10px;
+    color: var(--glow);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: fadeUp 0.5s 0.2s ease both;
+  }
+
+  .section-head::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .gesture-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 40px;
+    animation: fadeUp 0.5s 0.25s ease both;
+  }
+
+  .g-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 18px 16px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.15s;
+    cursor: default;
+  }
+
+  .g-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--glow);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+  }
+
+  .g-card.hit {
+    border-color: var(--glow);
+    transform: scale(1.02);
+    animation: cardPop 0.5s ease;
+  }
+
+  .g-card.hit::after { transform: scaleX(1); }
+
+  @keyframes cardPop {
+    0%   { box-shadow: 0 0 0 0 rgba(0,255,224,0); }
+    40%  { box-shadow: 0 0 20px 4px rgba(0,255,224,0.2); }
+    100% { box-shadow: 0 0 0 0 rgba(0,255,224,0); }
+  }
+
+  .g-emoji { font-size: 24px; margin-bottom: 10px; }
+
+  .g-name {
+    font-family: var(--display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .g-count {
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .g-count strong {
+    color: var(--glow);
+    font-size: 18px;
+    font-weight: 500;
+    display: block;
+    line-height: 1.2;
+  }
+
+  .g-bar {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 2px;
+    background: var(--glow);
+    opacity: 0.3;
+    width: 0%;
+    transition: width 0.6s ease;
+  }
+
+  /* ── Log feed ── */
+  .log-wrap {
+    animation: fadeUp 0.5s 0.3s ease both;
+  }
+
+  .log-feed {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    height: 220px;
+    overflow-y: auto;
+    padding: 12px;
+    font-size: 11px;
+    line-height: 1.9;
+    scroll-behavior: smooth;
+  }
+
+  .log-feed::-webkit-scrollbar { width: 4px; }
+  .log-feed::-webkit-scrollbar-thumb { background: var(--dim); }
+
+  .log-line {
+    display: flex;
+    gap: 12px;
+    border-bottom: 1px solid rgba(22,22,42,0.6);
+    padding: 2px 0;
+    opacity: 0;
+    animation: logIn 0.3s ease forwards;
+  }
+
+  @keyframes logIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .log-ts   { color: var(--muted); min-width: 70px; }
+  .log-seq  { color: var(--dim); min-width: 55px; }
+  .log-msg  { color: var(--text); }
+  .log-line.gesture .log-msg { color: var(--glow); font-weight: 500; }
+  .log-line.error   .log-msg { color: var(--glow2); }
+  .log-line.info    .log-msg { color: #7b8ab8; }
+
+  /* ── Stats row ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 40px;
+    animation: fadeUp 0.5s 0.15s ease both;
+  }
+
+  .stat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 16px;
+  }
+
+  .stat-label {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .stat-value {
+    font-family: var(--display);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  .stat-value.accent { color: var(--glow); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Idle / suppressed rest state card */
+  .g-card.suppressed {
+    opacity: 0.4;
+    border-style: dashed;
+    pointer-events: none;
+  }
+
+  .g-card.suppressed .g-name { color: var(--muted); }
+
+  .g-suppressed-tag {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 4px;
+    border: 1px solid var(--border);
+    padding: 3px 6px;
+    display: inline-block;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-tag">Wearable · Live Monitor</div>
+      <div class="brand-name">Gesture<span>OS</span></div>
+    </div>
+    <div class="conn-panel">
+      <div class="conn-row">
+        <input class="conn-input" id="brokerHost" value="localhost" placeholder="Broker IP">
+        <input class="conn-input" id="brokerPort" value="9001" placeholder="WS Port" style="width:80px">
+        <button class="conn-btn" id="connBtn" onclick="toggleConnect()">Connect</button>
+      </div>
+      <div class="status-badge">
+        <div class="pulse" id="pulse"></div>
+        <span id="statusTxt">Disconnected</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-card" id="heroCard">
+      <div class="hero-label">Last Detected Gesture</div>
+      <div class="hero-gesture" id="heroGesture">waiting...</div>
+      <div class="hero-conf" id="heroConf">confidence <span id="heroConfVal">—</span></div>
+      <div class="conf-bar-wrap">
+        <div class="conf-bar" id="confBar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="section-head">Session Stats</div>
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-label">Total Gestures</div>
+      <div class="stat-value accent" id="statTotal">0</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Last Confidence</div>
+      <div class="stat-value" id="statConf">—</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Most Fired</div>
+      <div class="stat-value" id="statMost">—</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">MQTT Messages</div>
+      <div class="stat-value" id="statMsgs">0</div>
+    </div>
+  </div>
+
+  <!-- Gesture cards -->
+  <div class="section-head">Gesture Breakdown</div>
+  <div class="gesture-grid" id="gestureGrid"></div>
+
+  <!-- Log -->
+  <div class="log-wrap">
+    <div class="section-head">Live MQTT Feed</div>
+    <div class="log-feed" id="logFeed"></div>
+  </div>
+
+</div>
+
+<script>
+// ── Gesture definitions ──────────────────────────────
+const GESTURES = [
+  { label: 'fist_hold',    emoji: '✊', suppressed: false },
+  { label: 'flick_down',   emoji: '👇', suppressed: false },
+  { label: 'flick_up',     emoji: '☝️', suppressed: false },
+  { label: 'wave_left',    emoji: '🤚', suppressed: false },
+  { label: 'wave_right',   emoji: '👋', suppressed: false },
+  { label: 'wrist_rotate', emoji: '🔄', suppressed: false },
+  { label: 'idle',         emoji: '🫷', suppressed: true  },  // rest class — never published to MQTT
+];
+
+// ── State ────────────────────────────────────────────
+const counts   = {};
+let totalFired = 0;
+let totalMsgs  = 0;
+let client     = null;
+let connected  = false;
+
+GESTURES.forEach(g => counts[g.label] = 0);
+
+// ── Build gesture cards ──────────────────────────────
+function buildCards() {
+  const grid = document.getElementById('gestureGrid');
+  GESTURES.forEach(g => {
+    const card = document.createElement('div');
+    card.className = 'g-card' + (g.suppressed ? ' suppressed' : '');
+    card.id = 'card_' + g.label;
+    card.innerHTML = `
+      <div class="g-emoji">${g.emoji}</div>
+      <div class="g-name">${g.label.replace(/_/g, ' ')}</div>
+      ${g.suppressed
+        ? '<div class="g-suppressed-tag">rest state · not published</div>'
+        : `<div class="g-count"><strong id="cnt_${g.label}">0</strong> detections</div>`
+      }
+      <div class="g-bar" id="bar_${g.label}"></div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ── MQTT connect ─────────────────────────────────────
+function toggleConnect() {
+  if (connected) { disconnect(); return; }
+
+  const host = document.getElementById('brokerHost').value.trim();
+  const port = parseInt(document.getElementById('brokerPort').value.trim());
+  const clientId = 'gesture_dashboard_' + Math.random().toString(16).slice(2, 8);
+
+  log('info', `Connecting to ws://${host}:${port} ...`);
+
+  client = new Paho.MQTT.Client(host, port, '/mqtt', clientId);
+
+  client.onConnectionLost = (res) => {
+    connected = false;
+    setStatus('disconnected');
+    log('error', `Connection lost: ${res.errorMessage}`);
+    document.getElementById('connBtn').textContent = 'Connect';
+    document.getElementById('connBtn').classList.remove('danger');
+  };
+
+  client.onMessageArrived = onMessage;
+
+  client.connect({
+    onSuccess: () => {
+      connected = true;
+      setStatus('connected');
+      log('info', `Connected. Subscribing to wearable/gesture ...`);
+      client.subscribe('wearable/gesture');
+      document.getElementById('connBtn').textContent = 'Disconnect';
+      document.getElementById('connBtn').classList.add('danger');
+    },
+    onFailure: (err) => {
+      setStatus('error');
+      log('error', `Connection failed: ${err.errorMessage}`);
+    },
+    useSSL: false,
+    timeout: 5,
+  });
+}
+
+function disconnect() {
+  if (client && connected) {
+    client.disconnect();
+  }
+  connected = false;
+  setStatus('disconnected');
+  document.getElementById('connBtn').textContent = 'Connect';
+  document.getElementById('connBtn').classList.remove('danger');
+}
+
+// ── Handle incoming message ──────────────────────────
+function onMessage(msg) {
+  totalMsgs++;
+  document.getElementById('statMsgs').textContent = totalMsgs;
+
+  let data;
+  try {
+    data = JSON.parse(msg.payloadString);
+  } catch {
+    log('error', 'Bad JSON: ' + msg.payloadString);
+    return;
+  }
+
+  const { gesture, confidence } = data;
+  if (!gesture) return;
+
+  log('gesture', `${gesture}  —  ${(confidence * 100).toFixed(1)}%`);
+  fireGesture(gesture, confidence);
+}
+
+// ── Fire a gesture detection ─────────────────────────
+let heroTimer = null;
+
+function fireGesture(label, confidence) {
+  totalFired++;
+  counts[label] = (counts[label] || 0) + 1;
+
+  // Hero update
+  const heroCard    = document.getElementById('heroCard');
+  const heroGesture = document.getElementById('heroGesture');
+  const heroConf    = document.getElementById('heroConfVal');
+  const confBar     = document.getElementById('confBar');
+
+  heroGesture.textContent = label.replace(/_/g, ' ');
+  heroGesture.classList.add('active');
+  heroConf.textContent    = (confidence * 100).toFixed(1) + '%';
+  confBar.style.width     = (confidence * 100) + '%';
+
+  heroCard.classList.remove('fired');
+  void heroCard.offsetWidth;
+  heroCard.classList.add('fired');
+
+  clearTimeout(heroTimer);
+  heroTimer = setTimeout(() => {
+    heroGesture.classList.remove('active');
+    heroCard.classList.remove('fired');
+  }, 1200);
+
+  // Card highlight
+  const card = document.getElementById('card_' + label);
+  if (card) {
+    card.classList.remove('hit');
+    void card.offsetWidth;
+    card.classList.add('hit');
+    setTimeout(() => card.classList.remove('hit'), 600);
+  }
+
+  // Update count and bar
+  const cntEl = document.getElementById('cnt_' + label);
+  if (cntEl) cntEl.textContent = counts[label];
+
+  const maxCount = Math.max(...Object.values(counts), 1);
+  GESTURES.forEach(g => {
+    const bar = document.getElementById('bar_' + g.label);
+    if (bar) bar.style.width = ((counts[g.label] / maxCount) * 100) + '%';
+  });
+
+  // Stats
+  document.getElementById('statTotal').textContent = totalFired;
+  document.getElementById('statConf').textContent  = (confidence * 100).toFixed(0) + '%';
+
+  const mostLabel = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])[0][0];
+  document.getElementById('statMost').textContent =
+    mostLabel.replace(/_/g, ' ');
+}
+
+// ── Log ──────────────────────────────────────────────
+function log(type, msg) {
+  const feed = document.getElementById('logFeed');
+  const line = document.createElement('div');
+  line.className = 'log-line ' + type;
+
+  const now = new Date();
+  const ts  = now.toLocaleTimeString('en-GB', { hour12: false });
+  const seq = String(totalMsgs).padStart(5, '0');
+
+  line.innerHTML = `
+    <span class="log-ts">${ts}</span>
+    <span class="log-seq">#${seq}</span>
+    <span class="log-msg">${msg}</span>
+  `;
+
+  feed.prepend(line);
+  while (feed.children.length > 80) feed.removeChild(feed.lastChild);
+}
+
+// ── Status indicator ─────────────────────────────────
+function setStatus(state) {
+  const pulse = document.getElementById('pulse');
+  const txt   = document.getElementById('statusTxt');
+  pulse.className = 'pulse ' + (state === 'connected' ? 'on' : state === 'error' ? 'err' : '');
+  txt.textContent = state === 'connected' ? 'Live'
+                  : state === 'error'     ? 'Error'
+                  : 'Disconnected';
+}
+
+// ── Init ─────────────────────────────────────────────
+buildCards();
+log('info', 'Dashboard ready. Enter broker IP and connect.');
+</script>
+</body>
+</html>

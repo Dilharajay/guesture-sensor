@@ -2,6 +2,7 @@
   "fist_hold": 0,
   "flick_down": 1,
   "flick_up": 2,
-  "wave_left": 3,
-  "wave_right": 4
+  "idle": 3,
+  "wave_left": 4,
+  "wave_right": 5
 }

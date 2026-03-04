@@ -31,7 +31,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 # ── Config ──────────────────────────────────────────
-DATA_DIR    = "data"
+ROOT_DIR   = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+DATA_DIR   = os.path.join(ROOT_DIR, "data")
 INPUT_CSV   = os.path.join(DATA_DIR, "gesture_dataset.csv")
 WINDOW_SIZE = 50    # must match firmware
 FEATURES    = ["ax", "ay", "az", "gx", "gy", "gz"]
