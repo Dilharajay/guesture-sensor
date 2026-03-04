@@ -1,8 +1,7 @@
 {
-  "fist_hold": 0,
-  "flick_down": 1,
-  "flick_up": 2,
-  "idle": 3,
-  "wave_left": 4,
-  "wave_right": 5
+  "flick_down": 0,
+  "flick_up": 1,
+  "idle": 2,
+  "wave_left": 3,
+  "wave_right": 4
 }

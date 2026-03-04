@@ -8,23 +8,22 @@ Model files:
   C header             -> /home/dilharajay/Documents/guesture-sensor/models/gesture_model.h
 
 Size comparison:
-  float32 tflite       :   107304 bytes  (104.8 KB)
-  int8 tflite          :    41544 bytes  (40.6 KB)
+  float32 tflite       :   107044 bytes  (104.5 KB)
+  int8 tflite          :    41448 bytes  (40.5 KB)
   Compression          : 61.3% smaller
 
 Accuracy on test set:
-  Keras float32        : 98.46%
-  TFLite float32       : 98.46%
-  TFLite INT8          : 98.46%
+  Keras float32        : 99.39%
+  TFLite float32       : 99.39%
+  TFLite INT8          : 99.39%
   Accuracy drop        : 0.00%
 
 Label map:
-  0  ->  fist_hold
-  1  ->  flick_down
-  2  ->  flick_up
-  3  ->  idle
-  4  ->  wave_left
-  5  ->  wave_right
+  0  ->  flick_down
+  1  ->  flick_up
+  2  ->  idle
+  3  ->  wave_left
+  4  ->  wave_right
 
 Next step: copy gesture_model.h into your Arduino
 firmware folder and proceed to Phase 03.
