@@ -1,6 +1,6 @@
 """
 =======================================================
-  Gesture Recognition Wearable — Phase 02
+  Gesture Recognition Wearable
   Step 3: INT8 Quantization + TFLite Export
 
   Converts the trained Keras model to a TFLite flatbuffer
@@ -8,8 +8,6 @@
   it as a C byte array ready to embed in the ESP8266
   Arduino firmware.
 
-  Requirements:
-    pip install tensorflow numpy
 
   Usage:
     python quantize_export.py

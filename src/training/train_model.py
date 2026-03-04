@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 """
 =======================================================
-  Gesture Recognition Wearable — Phase 02
+  Gesture Recognition Wearable 
   Step 2: Model Training (1D-CNN)
 
   Trains a lightweight 1D Convolutional Neural Network
   on the preprocessed gesture windows. Targets >92%
   val accuracy. Model is kept small enough for TFLite
   Micro on the ESP8266 (< 30KB weights).
-
-  Requirements:
-    pip install tensorflow pandas numpy matplotlib scikit-learn
 
   Usage:
     python train_model.py

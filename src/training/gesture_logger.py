@@ -1,13 +1,9 @@
-#!/usr/bin/env python3
 """
 =======================================================
   Gesture Recognition Wearable — Phase 01
   Python Data Logger
   Reads gesture windows from ESP8266 Serial and saves
   labeled samples to a structured CSV dataset.
-
-  Requirements:
-    pip install pyserial pandas
 
   Usage:
     python gesture_logger.py --port COM3 --gesture wave_right

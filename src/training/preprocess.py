@@ -1,9 +1,9 @@
 """
 =======================================================
-  Gesture Recognition Wearable — Phase 02
+  Gesture Recognition Wearable
   Step 1: Data Preprocessing
   
-  Reads data/gesture_dataset.csv collected in Phase 01,
+  Reads data/gesture_dataset.csv collected
   applies normalization and windowing, then saves
   ready-to-train numpy arrays.
 

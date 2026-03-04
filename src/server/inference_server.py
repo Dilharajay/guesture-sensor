@@ -1,6 +1,6 @@
 """
 =======================================================
-  Gesture Recognition Wearable — Revised Phase 03
+  Gesture Recognition Wearable 
   PC Inference Server
 
   Receives raw IMU windows from the ESP8266 over UDP,
@@ -12,17 +12,11 @@
                                           |
                               Home Assistant / Presenter
 
-  Requirements:
-    pip install numpy tflite-runtime paho-mqtt
-
   Note: use tflite-runtime (lightweight) instead of
   full tensorflow. Install with:
     pip install tflite-runtime
   Or if that fails on your platform:
     pip install tensorflow   (full package, also works)
-
-  Usage:
-    python inference_server.py
 
   Optional flags:
     --udp-port  5005          (default)

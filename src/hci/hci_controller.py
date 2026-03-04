@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 =======================================================
   Gesture Recognition Wearable — HCI Layer
@@ -6,9 +5,6 @@
 
   Subscribes to Mosquitto MQTT and fires keyboard
   shortcuts whenever a gesture is detected.
-
-  Requirements:
-    pip install paho-mqtt pynput
 
   Usage:
     python hci_controller.py
