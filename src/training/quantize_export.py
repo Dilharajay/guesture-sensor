@@ -29,7 +29,7 @@ import numpy as np
 import tensorflow as tf
 
 # ── Config ──────────────────────────────────────────
-ROOT_DIR   = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+ROOT_DIR   = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DATA_DIR   = os.path.join(ROOT_DIR, "data")
 MODELS_DIR = os.path.join(ROOT_DIR, "models")
 WINDOW_SIZE = 50

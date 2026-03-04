@@ -34,7 +34,7 @@ from datetime import datetime
 BAUD_RATE    = 115200
 WINDOW_SIZE  = 50
 SAMPLE_GOAL  = 200   # samples to collect per gesture
-ROOT_DIR   = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+ROOT_DIR   = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DATA_DIR   = os.path.join(ROOT_DIR, "data")
 OUTPUT_CSV   = os.path.join(DATA_DIR, "gesture_dataset.csv")
 
