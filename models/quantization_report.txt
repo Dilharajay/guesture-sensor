@@ -1,0 +1,30 @@
+======================================================
+  Gesture Wearable — Quantization Report
+======================================================
+
+Model files:
+  float32 tflite       -> /home/dilharajay/Documents/guesture-sensor/models/gesture_model_float32.tflite
+  int8 tflite          -> /home/dilharajay/Documents/guesture-sensor/models/gesture_model_int8.tflite
+  C header             -> /home/dilharajay/Documents/guesture-sensor/models/gesture_model.h
+
+Size comparison:
+  float32 tflite       :   107044 bytes  (104.5 KB)
+  int8 tflite          :    41448 bytes  (40.5 KB)
+  Compression          : 61.3% smaller
+
+Accuracy on test set:
+  Keras float32        : 98.67%
+  TFLite float32       : 98.67%
+  TFLite INT8          : 97.33%
+  Accuracy drop        : 1.33%
+
+Label map:
+  0  ->  fist_hold
+  1  ->  flick_down
+  2  ->  flick_up
+  3  ->  wave_left
+  4  ->  wave_right
+
+Next step: copy gesture_model.h into your Arduino
+firmware folder and proceed to Phase 03.
+======================================================

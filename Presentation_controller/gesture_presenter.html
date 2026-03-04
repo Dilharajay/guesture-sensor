@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gesture Presentation Controller</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --border: #1e1e2e;
+    --accent: #00f5c4;
+    --accent2: #7b61ff;
+    --accent3: #ff6b35;
+    --text: #e8e8f0;
+    --muted: #5a5a7a;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Top bar */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .logo {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.3s;
+  }
+
+  .dot.connected { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .dot.error     { background: var(--accent3); }
+
+  /* Main layout */
+  .main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 0;
+  }
+
+  /* Left panel */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent2);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  /* Connection config */
+  .config-group { display: flex; flex-direction: column; gap: 10px; }
+
+  .input-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  input:focus { border-color: var(--accent); }
+
+  .btn {
+    padding: 10px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .btn:active { transform: scale(0.97); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+  }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--accent3);
+    border: 1px solid var(--accent3);
+  }
+
+  /* Gesture map editor */
+  .gesture-map { display: flex; flex-direction: column; gap: 8px; }
+
+  .gmap-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .gmap-label { color: var(--muted); }
+
+  select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 4px 6px;
+    outline: none;
+  }
+
+  /* Right panel — slide preview */
+  .presenter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    padding: 40px;
+    position: relative;
+  }
+
+  /* Slide area */
+  .slide-wrap {
+    width: 100%;
+    max-width: 720px;
+    aspect-ratio: 16/9;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  .slide-wrap.flash-next { border-color: var(--accent); animation: flashBorder 0.4s ease; }
+  .slide-wrap.flash-prev { border-color: var(--accent2); animation: flashBorder 0.4s ease; }
+
+  @keyframes flashBorder {
+    0%   { box-shadow: 0 0 0px transparent; }
+    50%  { box-shadow: 0 0 24px currentColor; }
+    100% { box-shadow: 0 0 0px transparent; }
+  }
+
+  .slide-number {
+    font-size: clamp(4rem, 12vw, 8rem);
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    color: var(--border);
+    user-select: none;
+  }
+
+  .slide-counter {
+    position: absolute;
+    bottom: 16px;
+    right: 20px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* Gesture flash overlay */
+  .gesture-flash {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.1s;
+  }
+
+  .gesture-flash.show { opacity: 1; }
+
+  .gesture-badge {
+    background: rgba(0,0,0,0.85);
+    border: 1px solid var(--accent);
+    padding: 12px 24px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .ctrl-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .ctrl-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Log */
+  .log-panel {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    width: 300px;
+    background: rgba(10,10,15,0.9);
+    border: 1px solid var(--border);
+    padding: 12px;
+    max-height: 140px;
+    overflow-y: auto;
+  }
+
+  .log-entry {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.8;
+    border-bottom: 1px solid rgba(30,30,46,0.5);
+    padding: 2px 0;
+  }
+
+  .log-entry.gesture { color: var(--accent); }
+  .log-entry.error   { color: var(--accent3); }
+  .log-entry.info    { color: var(--accent2); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Gesture <span>Presenter</span></div>
+  <div class="status-row">
+    <div class="dot" id="dot"></div>
+    <span id="statusText">Disconnected</span>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+
+    <div>
+      <div class="section-label">WebSocket Server</div>
+      <div class="config-group">
+        <div class="input-row">
+          <label>Host</label>
+          <input type="text" id="wsHost" value="192.168.1.100" placeholder="ESP8266 IP">
+        </div>
+        <div class="input-row">
+          <label>Port</label>
+          <input type="text" id="wsPort" value="8080">
+        </div>
+        <div class="input-row">
+          <label>Path</label>
+          <input type="text" id="wsPath" value="/gesture">
+        </div>
+        <button class="btn btn-primary" onclick="toggleConnect()">Connect</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Gesture Actions</div>
+      <div class="gesture-map" id="gestureMap">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Confidence Threshold</div>
+      <div class="input-row">
+        <label>Min confidence (%)</label>
+        <input type="number" id="threshold" value="85" min="50" max="100">
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Presenter -->
+  <div class="presenter">
+
+    <div class="slide-wrap" id="slideWrap">
+      <div class="slide-number" id="slideNumber">01</div>
+      <div class="slide-counter" id="slideCounter">1 / 20</div>
+      <div class="gesture-flash" id="gestureFLash">
+        <div class="gesture-badge" id="gestureBadge"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl-btn" onclick="prevSlide()">← Prev</button>
+      <span id="slideInfo">Slide 1 of 20</span>
+      <button class="ctrl-btn" onclick="nextSlide()">Next →</button>
+    </div>
+
+    <div class="log-panel" id="logPanel"></div>
+
+  </div>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────
+  let ws          = null;
+  let connected   = false;
+  let currentSlide = 1;
+  const totalSlides = 20;
+
+  // Gesture to action map (user editable)
+  const gestureActions = {
+    wave_right:   'next',
+    wave_left:    'prev',
+    fist_hold:    'none',
+    flick_up:     'first',
+    flick_down:   'last',
+    wrist_rotate: 'none',
+  };
+
+  const actionLabels = {
+    next: 'Next Slide',
+    prev: 'Prev Slide',
+    first: 'Go to First',
+    last: 'Go to Last',
+    none: '— None —',
+  };
+
+  // ── Build gesture map UI ───────────────────────────
+  function buildGestureMap() {
+    const container = document.getElementById('gestureMap');
+    container.innerHTML = '';
+    for (const [gesture, action] of Object.entries(gestureActions)) {
+      const row = document.createElement('div');
+      row.className = 'gmap-row';
+
+      const lbl = document.createElement('div');
+      lbl.className = 'gmap-label';
+      lbl.textContent = gesture;
+
+      const sel = document.createElement('select');
+      for (const [val, text] of Object.entries(actionLabels)) {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = text;
+        if (val === action) opt.selected = true;
+        sel.appendChild(opt);
+      }
+      sel.addEventListener('change', () => {
+        gestureActions[gesture] = sel.value;
+      });
+
+      row.appendChild(lbl);
+      row.appendChild(sel);
+      container.appendChild(row);
+    }
+  }
+
+  // ── WebSocket ──────────────────────────────────────
+  function toggleConnect() {
+    if (connected) {
+      ws && ws.close();
+      return;
+    }
+
+    const host = document.getElementById('wsHost').value.trim();
+    const port = document.getElementById('wsPort').value.trim();
+    const path = document.getElementById('wsPath').value.trim();
+    const url  = `ws://${host}:${port}${path}`;
+
+    log(`Connecting to ${url} ...`, 'info');
+
+    ws = new WebSocket(url);
+
+    ws.onopen = () => {
+      connected = true;
+      setStatus('connected');
+      log('WebSocket connected.', 'info');
+      document.querySelector('.btn-primary').textContent = 'Disconnect';
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        handleGesture(data.gesture, data.confidence);
+      } catch (e) {
+        log('Bad payload: ' + event.data, 'error');
+      }
+    };
+
+    ws.onerror = () => {
+      log('WebSocket error.', 'error');
+      setStatus('error');
+    };
+
+    ws.onclose = () => {
+      connected = false;
+      setStatus('disconnected');
+      log('Disconnected.', 'info');
+      document.querySelector('.btn-primary').textContent = 'Connect';
+    };
+  }
+
+  // ── Gesture handler ────────────────────────────────
+  function handleGesture(gesture, confidence) {
+    const threshold = parseFloat(document.getElementById('threshold').value) / 100;
+    if (confidence < threshold) {
+      log(`${gesture} (${(confidence*100).toFixed(0)}%) — below threshold`, 'info');
+      return;
+    }
+
+    log(`GESTURE: ${gesture}  ${(confidence*100).toFixed(0)}%`, 'gesture');
+    showGestureBadge(gesture, confidence);
+
+    const action = gestureActions[gesture] || 'none';
+    if (action === 'next')  nextSlide();
+    if (action === 'prev')  prevSlide();
+    if (action === 'first') goToSlide(1);
+    if (action === 'last')  goToSlide(totalSlides);
+  }
+
+  // ── Slide navigation ───────────────────────────────
+  function nextSlide() {
+    if (currentSlide < totalSlides) {
+      currentSlide++;
+      updateSlide('next');
+    }
+  }
+
+  function prevSlide() {
+    if (currentSlide > 1) {
+      currentSlide--;
+      updateSlide('prev');
+    }
+  }
+
+  function goToSlide(n) {
+    const dir = n > currentSlide ? 'next' : 'prev';
+    currentSlide = Math.max(1, Math.min(totalSlides, n));
+    updateSlide(dir);
+  }
+
+  function updateSlide(dir) {
+    const numEl    = document.getElementById('slideNumber');
+    const counter  = document.getElementById('slideCounter');
+    const infoEl   = document.getElementById('slideInfo');
+    const wrap     = document.getElementById('slideWrap');
+
+    numEl.textContent   = String(currentSlide).padStart(2, '0');
+    counter.textContent = `${currentSlide} / ${totalSlides}`;
+    infoEl.textContent  = `Slide ${currentSlide} of ${totalSlides}`;
+
+    wrap.classList.remove('flash-next', 'flash-prev');
+    void wrap.offsetWidth; // force reflow
+    wrap.classList.add(dir === 'next' ? 'flash-next' : 'flash-prev');
+
+    // In a real integration: window.postMessage or
+    // Reveal.js API: Reveal.next() / Reveal.prev()
+    // Google Slides: use the Slides API via OAuth
+  }
+
+  // ── UI helpers ─────────────────────────────────────
+  let flashTimer = null;
+
+  function showGestureBadge(gesture, confidence) {
+    const flash = document.getElementById('gestureFLash');
+    const badge = document.getElementById('gestureBadge');
+    badge.textContent = `${gesture}  ${(confidence*100).toFixed(0)}%`;
+    flash.classList.add('show');
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => flash.classList.remove('show'), 1200);
+  }
+
+  function setStatus(state) {
+    const dot  = document.getElementById('dot');
+    const text = document.getElementById('statusText');
+    dot.className = 'dot ' + state;
+    text.textContent = state === 'connected' ? 'Connected'
+                     : state === 'error'     ? 'Error'
+                     : 'Disconnected';
+  }
+
+  function log(msg, type = '') {
+    const panel = document.getElementById('logPanel');
+    const entry = document.createElement('div');
+    entry.className = 'log-entry ' + type;
+    const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
+    entry.textContent = `${time}  ${msg}`;
+    panel.prepend(entry);
+    // Keep log trimmed
+    while (panel.children.length > 40) panel.removeChild(panel.lastChild);
+  }
+
+  // ── Keyboard fallback ──────────────────────────────
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+    if (e.key === 'ArrowLeft')                    prevSlide();
+  });
+
+  // ── Init ───────────────────────────────────────────
+  buildGestureMap();
+  log('Presenter ready. Connect to your ESP8266 WebSocket.', 'info');
+</script>
+</body>
+</html>
