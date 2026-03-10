@@ -1,0 +1,5 @@
+outs:
+- md5: f0bb3116c23c5a3ecb8148b7796e4443
+  size: 3672855
+  hash: md5
+  path: gesture_dataset.csv
