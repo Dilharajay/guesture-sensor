@@ -53,7 +53,7 @@ gesture-sensor/
 │   └── gesture_dashboard.html   # Live gesture monitoring UI
 │
 ├── data/                        # Dataset and preprocessed arrays
-│   ├── gesture_dataset.csv      # Raw collected samples
+│   ├── gesture_dataset.csv.dvc  # DVC tracking for raw dataset
 │   ├── X_train.npy, y_train.npy # Training data
 │   ├── label_map.json           # Gesture → index mapping
 │   └── scaler.pkl               # StandardScaler for inference
@@ -66,9 +66,57 @@ gesture-sensor/
 ├── config/
 │   └── mosquitto.conf           # MQTT broker configuration
 │
-├── docs/                        # Documentation and diagrams
+├── .dvc/                        # DVC configuration
 ├── pyproject.toml               # Python dependencies (uv)
 └── README.md                    # This file
+```
+
+---
+
+## Dataset
+
+The 6-axis motion gesture dataset (hand waves and flicks) used in this project is publicly available on Kaggle:
+
+👉 **[Kaggle: 6-axis Motion Gesture Dataset](https://www.kaggle.com/datasets/dilharajayawardhane/6-axis-motion-gesture-dataset-hand-waves-and-flicks)**
+
+If you are a contributor with AWS S3 access, you can use DVC to pull the data directly.
+
+---
+
+## Data Management with DVC
+
+This project uses [DVC (Data Version Control)](https://dvc.org/) to manage large data files and ensure reproducibility. The raw dataset is stored in an AWS S3 bucket.
+
+### Setup DVC
+
+DVC and the S3 extension are included in the project dependencies:
+
+```bash
+uv sync
+```
+
+### Pulling Data (Contributors)
+
+If you have the necessary AWS credentials configured:
+
+```bash
+dvc pull
+```
+
+### Tracking Changes
+
+If you collect new data and want to update the tracked dataset:
+
+```bash
+# Add new data to DVC
+dvc add data/gesture_dataset.csv
+
+# Push to S3 remote
+dvc push
+
+# Commit the .dvc file change
+git add data/gesture_dataset.csv.dvc
+git commit -m "update dataset"
 ```
 
 ---
