@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "dvc>=3.66.1",
     "matplotlib>=3.10.8",
     "paho-mqtt>=2.1.0",
     "pandas>=3.0.1",
