@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "dvc>=3.66.1",
+    "dvc-s3>=3.3.0",
     "matplotlib>=3.10.8",
     "paho-mqtt>=2.1.0",
     "pandas>=3.0.1",
