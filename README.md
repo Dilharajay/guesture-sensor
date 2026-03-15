@@ -38,36 +38,38 @@ gesture-sensor/
 │   │   └── cmsis_gcc.h          # CMSIS compatibility shim
 │   └── platformio.ini           # Build configuration
 │
-├── src/                         # Python source code
-│   ├── training/                # ML pipeline
-│   │   ├── gesture_logger.py    # Collect labeled gesture data
-│   │   ├── preprocess.py        # Normalize and split dataset
-│   │   ├── train_model.py       # Train 1D-CNN model
-│   │   └── quantize_export.py   # Convert to INT8 TFLite
-│   ├── server/
-│   │   └── inference_server.py  # UDP→TFLite→MQTT inference
-│   └── hci/
-│       └── hci_controller.py    # MQTT→keyboard shortcuts
-│
-├── dashboard/
-│   └── gesture_dashboard.html   # Live gesture monitoring UI
-│
-├── data/                        # Dataset and preprocessed arrays
-│   ├── gesture_dataset.csv.dvc  # DVC tracking for raw dataset
-│   ├── X_train.npy, y_train.npy # Training data
-│   ├── label_map.json           # Gesture → index mapping
-│   └── scaler.pkl               # StandardScaler for inference
-│
-├── models/                      # Trained models
-│   ├── gesture_model.keras      # Full Keras model
-│   ├── gesture_model_int8.tflite # Quantized TFLite model
-│   └── gesture_model.h          # C header for embedded use
-│
-├── config/
-│   └── mosquitto.conf           # MQTT broker configuration
-│
-├── .dvc/                        # DVC configuration
-├── pyproject.toml               # Python dependencies (uv)
+├── server/
+|   ├── src/                         # Python source code
+|   │   ├── training/                # ML pipeline
+|   │   │   ├── gesture_logger.py    # Collect labeled gesture data
+|   │   │   ├── preprocess.py        # Normalize and split dataset
+|   │   │   ├── train_model.py       # Train 1D-CNN model
+|   │   │   └── quantize_export.py   # Convert to INT8 TFLite
+|   │   ├── server/
+|   │   │   └── inference_server.py  # UDP→TFLite→MQTT inference
+|   │   └── hci/
+|   │       └── hci_controller.py    # MQTT→keyboard shortcuts
+|   │
+|   ├── dashboard/
+|   │   └── gesture_dashboard.html   # Live gesture monitoring UI
+|   │
+|   ├── data/                        # Dataset and preprocessed arrays
+|   │   ├── gesture_dataset.csv.dvc  # DVC tracking for raw dataset
+|   │   ├── X_train.npy, y_train.npy # Training data
+|   │   ├── label_map.json           # Gesture → index mapping
+|   │   └── scaler.pkl               # StandardScaler for inference
+|   │
+|   ├── models/                      # Trained models
+|   │   ├── gesture_model.keras      # Full Keras model
+|   │   ├── gesture_model_int8.tflite # Quantized TFLite model
+|   │   └── gesture_model.h          # C header for embedded use
+|   │
+|   ├── config/
+|   │   └── mosquitto.conf           # MQTT broker configuration
+|   │
+|   ├── .dvc/                        # DVC configuration
+|   └── pyproject.toml               # Python dependencies (uv)
+|
 └── README.md                    # This file
 ```
 
